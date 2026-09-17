@@ -15,7 +15,7 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-base font-bold text-slate-900 leading-none">StockPilot</h1>
+                    <h1 class="text-base font-bold text-slate-900 leading-none">SalesInboxAI</h1>
                     <p class="text-[11px] font-medium text-slate-400 mt-0.5">{{ $totalProductsCount }} products in inventory</p>
                 </div>
             </div>

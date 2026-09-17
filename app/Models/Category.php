@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -12,6 +13,7 @@ class Category extends Model
     use HasFactory;
 
     protected $fillable = [
+        'facebook_page_id',
         'name',
         'slug',
         'icon',
@@ -29,8 +31,21 @@ class Category extends Model
         });
     }
 
+    public function facebookPage(): BelongsTo
+    {
+        return $this->belongsTo(FacebookPage::class);
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function scopeForFacebookPage($query, $pageId)
+    {
+        if (empty($pageId) || $pageId === 'all') {
+            return $query;
+        }
+        return $query->where('facebook_page_id', $pageId);
     }
 }

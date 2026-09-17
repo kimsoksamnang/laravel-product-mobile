@@ -14,6 +14,7 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
+        'facebook_page_id',
         'category_id',
         'name',
         'slug',
@@ -55,6 +56,11 @@ class Product extends Model
         });
     }
 
+    public function facebookPage(): BelongsTo
+    {
+        return $this->belongsTo(FacebookPage::class);
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
@@ -63,6 +69,11 @@ class Product extends Model
     public function stockMovements(): HasMany
     {
         return $this->hasMany(StockMovement::class)->latest();
+    }
+
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
     }
 
     public function getStockStatusAttribute(): string
@@ -93,7 +104,6 @@ class Product extends Model
         if ($this->image_path && (Str::startsWith($this->image_path, 'http://') || Str::startsWith($this->image_path, 'https://'))) {
             return $this->image_path;
         }
-        // Fallback default SVG placeholder
         return '/images/placeholder.svg';
     }
 
@@ -103,6 +113,14 @@ class Product extends Model
             return null;
         }
         return round((($this->price - $this->cost_price) / $this->price) * 100, 1);
+    }
+
+    public function scopeForFacebookPage($query, $pageId)
+    {
+        if (empty($pageId) || $pageId === 'all') {
+            return $query;
+        }
+        return $query->where('facebook_page_id', $pageId);
     }
 
     public function scopeSearch($query, ?string $search)
