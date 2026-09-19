@@ -43,10 +43,10 @@
             @endif
 
             <div class="space-y-1.5">
-                <label class="block text-[11px] font-bold text-slate-700 ml-1 uppercase tracking-wider">Email Address</label>
-                <input type="email" name="email" value="{{ old('email') }}" required autofocus
+                <label class="block text-[11px] font-bold text-slate-700 ml-1 uppercase tracking-wider">Phone Number</label>
+                <input type="text" name="phone" value="{{ old('phone') }}" required autofocus
                        class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400 font-medium"
-                       placeholder="admin@example.com">
+                       placeholder="e.g. 012345678">
             </div>
 
             <div class="space-y-1.5">
@@ -68,12 +68,26 @@
             <button type="submit" class="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all">
                 Sign In
             </button>
+
+            <div class="relative py-4">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-slate-200"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-slate-50/50 text-slate-500 font-medium">Or</span>
+                </div>
+            </div>
+
+            <a href="{{ route('login.facebook') }}" class="w-full flex items-center justify-center space-x-2 py-3.5 px-4 rounded-xl bg-[#1877F2] hover:bg-[#166fe5] active:bg-[#1464ce] text-white text-sm font-bold shadow-md transition-all">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                <span>Log in with Facebook</span>
+            </a>
         </form>
 
         <div class="mt-8 text-center pt-6 pb-2 border-t border-slate-100">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Demo Access</p>
             <div class="flex flex-col items-center justify-center space-y-1.5">
-                <code class="bg-slate-50 border border-slate-200 text-slate-600 px-2 py-1 rounded-lg text-xs font-semibold w-full max-w-[200px]">samnang@example.com</code>
+                <code class="bg-slate-50 border border-slate-200 text-slate-600 px-2 py-1 rounded-lg text-xs font-semibold w-full max-w-[200px]">012345678</code>
                 <code class="bg-slate-50 border border-slate-200 text-slate-600 px-2 py-1 rounded-lg text-xs font-semibold w-full max-w-[200px]">password</code>
             </div>
         </div>

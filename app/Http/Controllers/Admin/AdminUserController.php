@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 
 class AdminUserController extends Controller
@@ -189,5 +190,68 @@ class AdminUserController extends Controller
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('success', "User {$user->name} deleted successfully.");
+    }
+
+    /**
+     * Sync Facebook Pages from Graph API.
+     */
+    public function syncFacebookPages(User $user): RedirectResponse
+    {
+        if (!$user->isFacebookConnected() || !$user->facebook_access_token) {
+            return back()->with('error', 'User is not connected to Facebook or missing access token.');
+        }
+
+        try {
+            $response = Http::get('https://graph.facebook.com/v19.0/me/accounts', [
+                'access_token' => $user->facebook_access_token,
+                'fields' => 'id,name,access_token,category,picture,followers_count',
+            ]);
+
+            if ($response->failed()) {
+                $errorMsg = $response->json('error.message') ?? 'Unknown error from Facebook API.';
+                return back()->with('error', 'Failed to fetch pages from Facebook: ' . $errorMsg);
+            }
+
+            $data = $response->json('data');
+            if (empty($data)) {
+                return back()->with('success', 'No pages found on this Facebook account.');
+            }
+
+            $syncedCount = 0;
+            $pageIds = [];
+
+            foreach ($data as $fbPage) {
+                $pageId = $fbPage['id'];
+                $pageIds[] = $pageId;
+                
+                $pictureUrl = null;
+                if (isset($fbPage['picture']['data']['url'])) {
+                    $pictureUrl = $fbPage['picture']['data']['url'];
+                }
+
+                $page = FacebookPage::updateOrCreate(
+                    ['page_id' => $pageId],
+                    [
+                        'name' => $fbPage['name'],
+                        'access_token' => $fbPage['access_token'],
+                        'category' => $fbPage['category'] ?? 'Retail',
+                        'followers_count' => $fbPage['followers_count'] ?? 0,
+                        'avatar_url' => $pictureUrl,
+                    ]
+                );
+
+                // Ensure it's attached to the user
+                if (!$user->facebookPages()->where('facebook_pages.id', $page->id)->exists()) {
+                    $user->facebookPages()->attach($page->id, ['role' => 'admin']);
+                }
+                
+                $syncedCount++;
+            }
+
+            return back()->with('success', "Successfully synced {$syncedCount} pages from Facebook.");
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Exception while syncing pages: ' . $e->getMessage());
+        }
     }
 }

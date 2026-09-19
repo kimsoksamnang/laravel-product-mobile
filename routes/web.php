@@ -17,14 +17,62 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login')->
 Route::post('/login', [LoginController::class, 'authenticate'])->middleware('guest');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+Route::get('/login/facebook', [LoginController::class, 'redirectToFacebook'])->name('login.facebook')->middleware('guest');
+Route::get('/login/facebook/callback', [LoginController::class, 'handleFacebookCallback'])->middleware('guest');
+
+// Re-auth to request page permissions (for already-logged-in users)
+Route::get('/connect/facebook/pages', [LoginController::class, 'redirectToFacebookPages'])->name('facebook.connect-pages')->middleware('auth');
+Route::get('/connect/facebook/pages/callback', [LoginController::class, 'handleFacebookPagesCallback'])->middleware('auth');
+
+// Manual token workaround: sync pages using a token from Graph API Explorer
+Route::post('/connect/facebook/pages/manual', [LoginController::class, 'syncPagesWithToken'])->name('facebook.sync-pages-manual')->middleware('auth');
+
 Route::get('/', function () {
     return redirect()->route('products.index');
 });
+
+// ⚠️ TEMPORARY DEBUG ROUTE — Remove before going live
+Route::get('/debug/me', function () {
+    $user = auth()->user();
+    if (!$user) {
+        return response()->json(['error' => 'Not logged in'], 401);
+    }
+
+    // Call Graph API to verify the token is valid and get identity
+    $token = $user->getRawOriginal('facebook_access_token');
+    $graphData = null;
+
+    if ($token) {
+        $response = \Illuminate\Support\Facades\Http::get('https://graph.facebook.com/v20.0/me', [
+            'access_token' => $token,
+            'fields'       => 'id,name,email',
+        ]);
+        $graphData = $response->json();
+    }
+
+    return response()->json([
+        'db_user' => [
+            'id'                   => $user->id,
+            'name'                 => $user->name,
+            'email'                => $user->email,
+            'facebook_user_id'     => $user->facebook_user_id,
+            'facebook_connected'   => $user->isFacebookConnected(),
+            'has_access_token'     => !empty($token),
+        ],
+        'graph_api_identity'       => $graphData,
+        'instructions'             => [
+            'step1' => 'Check that graph_api_identity.id matches db_user.facebook_user_id',
+            'step2' => 'Visit https://developers.facebook.com/apps → Your App → App Roles → confirm your FB ID is listed as Admin or Developer',
+            'step3' => 'Your FB ID is shown in graph_api_identity.id',
+        ],
+    ], 200, [], JSON_PRETTY_PRINT);
+})->middleware('auth')->name('debug.me');
 
 // Main App Routes (Protected by auth)
 Route::middleware(['auth'])->group(function () {
     // 1. User Profile Menu & Facebook Connection
     Route::get('/profile', [UserProfileController::class, 'index'])->name('profile.index');
+    Route::get('/profile/edit', [UserProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [UserProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/connect-facebook', [UserProfileController::class, 'connectFacebook'])->name('profile.connect-facebook');
     Route::post('/profile/disconnect-facebook', [UserProfileController::class, 'disconnectFacebook'])->name('profile.disconnect-facebook');
@@ -76,6 +124,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
         Route::post('/users/{user}/toggle-facebook', [AdminUserController::class, 'toggleFacebook'])->name('users.toggle-facebook');
+        Route::post('/users/{user}/sync-facebook-pages', [AdminUserController::class, 'syncFacebookPages'])->name('users.sync-facebook-pages');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
 
         // Manage Facebook Pages

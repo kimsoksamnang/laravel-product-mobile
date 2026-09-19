@@ -20,15 +20,16 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
         'facebook_user_id',
         'avatar_url',
-        'phone',
         'role',
         'fb_profile_url',
         'bio',
         'is_system_admin',
         'facebook_connected_at',
+        'facebook_access_token',
     ];
 
     /**
@@ -39,6 +40,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'facebook_access_token',
     ];
 
     /**
@@ -73,12 +75,13 @@ class User extends Authenticatable
         return !empty($this->facebook_user_id) && $this->facebook_connected_at !== null;
     }
 
-    public function connectFacebook(string $fbId, ?string $profileUrl = null): void
+    public function connectFacebook(string $fbId, ?string $profileUrl = null, ?string $token = null): void
     {
         $this->update([
             'facebook_user_id' => $fbId,
             'facebook_connected_at' => now(),
             'fb_profile_url' => $profileUrl ?: ($this->fb_profile_url ?: 'https://facebook.com/' . $fbId),
+            'facebook_access_token' => $token ?: $this->facebook_access_token,
         ]);
     }
 
@@ -87,11 +90,21 @@ class User extends Authenticatable
         $this->update([
             'facebook_user_id' => null,
             'facebook_connected_at' => null,
+            'facebook_access_token' => null,
         ]);
     }
 
     public function getAvatarAttribute(): string
     {
-        return $this->avatar_url ?: 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=0ea5e9&color=fff';
+        if (!empty($this->facebook_user_id)) {
+            $token = $this->facebook_access_token ? '&access_token=' . $this->facebook_access_token : '';
+            return 'https://graph.facebook.com/v20.0/' . $this->facebook_user_id . '/picture?type=large' . $token;
+        }
+
+        if (!empty($this->avatar_url)) {
+            return $this->avatar_url;
+        }
+
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=0ea5e9&color=fff';
     }
 }

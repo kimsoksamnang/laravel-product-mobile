@@ -15,16 +15,21 @@ class UserProfileController extends Controller
     public function index(): View
     {
         $user = $this->getActiveUser();
-        $pages = $user ? $user->facebookPages : collect();
-
+        
         $stats = [
-            'total_pages' => $pages->count(),
-            'total_products' => $pages->sum(fn($p) => $p->products()->count()),
-            'total_orders' => $pages->sum(fn($p) => $p->orders()->count()),
-            'open_orders' => $pages->sum(fn($p) => $p->openOrders()->count()),
+            'total_pages' => $user ? $user->facebookPages()->count() : 0,
+            'total_products' => \App\Models\Product::count(),
+            'total_orders' => \App\Models\Order::count(),
+            'open_orders' => \App\Models\Order::where('status', 'open')->count(),
         ];
 
-        return view('profile.index', compact('user', 'pages', 'stats'));
+        return view('profile.index', compact('user', 'stats'));
+    }
+
+    public function edit(): View
+    {
+        $user = $this->getActiveUser();
+        return view('profile.edit', compact('user'));
     }
 
     /**

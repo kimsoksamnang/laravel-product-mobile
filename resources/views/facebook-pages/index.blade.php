@@ -11,11 +11,19 @@
             <h1 class="text-xl font-black text-slate-900 tracking-tight">Facebook Pages</h1>
             <p class="text-xs text-slate-500 font-medium">Your connected shops & sales channels</p>
         </div>
-        <a href="{{ route('facebook-pages.create') }}" 
-           class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-sm shadow-blue-500/25 transition-all">
-            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-            Connect Page
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('facebook.connect-pages') }}"
+               class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-blue-50 active:scale-95 text-blue-600 border border-blue-200 shadow-xs transition-all"
+               title="Sync your latest Facebook Pages">
+                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Sync
+            </a>
+            <a href="{{ route('facebook-pages.create') }}"
+               class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-sm shadow-blue-500/25 transition-all">
+                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                Connect Page
+            </a>
+        </div>
     </div>
 
     <!-- Active Shop Status Banner -->
@@ -52,6 +60,127 @@
                     {{ $isAllPages ? 'Pick Shop' : 'View All' }}
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Facebook Connection Status & Actions Card -->
+    @php $user = Auth::user(); @endphp
+    <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 mb-5" x-data="{ showConnectModal: false }">
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-2">
+                <div class="w-7 h-7 rounded-lg bg-[#1877F2] text-white flex items-center justify-center font-bold text-xs">
+                    f
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-slate-900">Facebook Account Integration</h3>
+                    <p class="text-[10px] text-slate-400">Sync pages, products, and order chats</p>
+                </div>
+            </div>
+            @if($user?->isFacebookConnected())
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    Active
+                </span>
+            @else
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                    Not Linked
+                </span>
+            @endif
+        </div>
+
+        @if($user?->isFacebookConnected())
+            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-500 text-[11px]">Facebook ID</span>
+                    <span class="font-mono font-bold text-slate-800 text-[11px]">{{ $user->facebook_user_id }}</span>
+                </div>
+                @if($user->facebook_connected_at)
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-500 text-[11px]">Connected</span>
+                        <span class="text-slate-700 text-[11px]">{{ $user->facebook_connected_at->diffForHumans() }}</span>
+                    </div>
+                @endif
+                @if($user->fb_profile_url)
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-500 text-[11px]">Profile Link</span>
+                        <a href="{{ $user->fb_profile_url }}" target="_blank" class="text-blue-600 hover:underline text-[11px] truncate max-w-[180px]">
+                            {{ $user->fb_profile_url }}
+                        </a>
+                    </div>
+                @endif
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+                <button @click="showConnectModal = true"
+                        type="button"
+                        class="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold text-center transition-colors">
+                    Re-link Account
+                </button>
+                <form action="{{ route('profile.disconnect-facebook') }}" method="POST" onsubmit="return confirm('Disconnect this Facebook account? Your shop associations will remain.');" class="flex-1">
+                    @csrf
+                    <button type="submit"
+                            class="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold text-center border border-rose-200 transition-colors">
+                        Disconnect FB
+                    </button>
+                </form>
+            </div>
+        @else
+            <div class="p-3 bg-amber-50/70 rounded-2xl border border-amber-200/60 mb-3">
+                <div class="flex items-start space-x-2">
+                    <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                    <p class="text-xs text-amber-800">
+                        No Facebook account connected. Connect to allow AI Order Agent synchronization and live messenger order ingestion.
+                    </p>
+                </div>
+            </div>
+
+            <button @click="showConnectModal = true" 
+                    type="button" 
+                    class="w-full py-2.5 px-4 rounded-xl bg-[#1877F2] hover:bg-blue-700 active:scale-[0.99] text-white text-xs font-bold shadow-md shadow-blue-500/25 flex items-center justify-center space-x-2 transition-all">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                <span>Connect Facebook Account</span>
+            </button>
+        @endif
+
+        <!-- Connect Account Modal Dialog -->
+        <div x-cloak x-show="showConnectModal" 
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+             @keydown.escape.window="showConnectModal = false">
+            <div class="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-slate-200" @click.away="showConnectModal = false">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-7 h-7 rounded-lg bg-[#1877F2] text-white flex items-center justify-center font-bold text-xs">f</div>
+                        <h4 class="text-sm font-bold text-slate-900">Connect Facebook</h4>
+                    </div>
+                    <button @click="showConnectModal = false" class="text-slate-400 hover:text-slate-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <form action="{{ route('profile.connect-facebook') }}" method="POST" class="space-y-3">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Facebook User ID</label>
+                        <input type="text" name="facebook_user_id" value="{{ $user?->facebook_user_id ?? 'fb_'.rand(10000000, 99999999) }}" required
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500">
+                        <p class="text-[10px] text-slate-400 mt-1">Unique OAuth Graph ID for your Facebook merchant account</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Facebook Profile URL (Optional)</label>
+                        <input type="url" name="fb_profile_url" value="{{ $user?->fb_profile_url ?? 'https://facebook.com/'.($user?->name ? strtolower(str_replace(' ', '.', $user->name)) : 'user') }}"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="pt-2 flex items-center gap-2">
+                        <button type="button" @click="showConnectModal = false" class="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 py-2 rounded-xl bg-[#1877F2] hover:bg-blue-700 text-white text-xs font-bold shadow-xs">
+                            Confirm Link
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
